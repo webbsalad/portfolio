@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+{% block content %}
+
+    <div class="card-header text-center">
+        <h1> {% trans "Суворов Роман" %} </h1>
+        <p>{% trans "Студент РГПУ им. Герцена, ИИТТО, ИВТ 2 курс" %}</p>
+        <p>{% trans "Данное портфолио создано студентом РГПУ имени Герцена с целью размещения на нем информации о выполненных работах" %}</p>
+
+        <h3>{% trans "Ссылки:" %}</h3>
+            <a href="/explanation">
+                <button class="btn btn-primary">{% trans "Обо мне" %}</button>
+            </a>
+
+            <a href="/prog">
+                <button class="btn btn-primary">{% trans "ПРОГ4" %}</button>
+            </a>
+            
+            <a href="/db">
+                <button class="btn btn-primary">{% trans "БД" %}</button>
+            </a>
+
+            <a href="/cw">
+                <button class="btn btn-primary">{% trans "КП" %}</button>
+            </a><br><br>
+
+            <a href="https://t.me/webbbsalad">
+                <button class="btn btn-primary">Telegram</button>
+            </a>
+
+    </div>
+
+{% endblock %}

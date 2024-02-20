@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐸Суворов Роман🐸</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="/static/img/logo.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.2.1/dist/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+    <body>
+        <a href="{% url 'set_language' %}?language=ru">
+            <button id="btn_ru" class="btn btn-primary bg-blue-500"  onclick="highlightButton(this)">Русский</button>
+        </a> 
+        <a href="{% url 'set_language' %}?language=en">
+            <button id="btn_en" class="btn btn-primary bg-blue-500"  onclick="highlightButton(this)">English</button>
+        </a>
+        <div class="container">
+            <div class="row">
+                <div class="card box-shadow m-2 from-w">
+                    {% block content %}
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
+
+
+
+<script>
+    function changeLanguage(language) {
+        localStorage.setItem('selectedLanguage', language);
+
+        document.querySelectorAll('.btn-primary').forEach(function(button) {
+            button.classList.remove('active');
+        });
+        document.getElementById('btn_' + language).classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var selectedLanguage = localStorage.getItem('selectedLanguage');
+        if (selectedLanguage) {
+            changeLanguage(selectedLanguage);
+        }
+    });
+</script>

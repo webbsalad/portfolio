@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+{% block content %}
+    <a href="/">
+        <button class="btn btn-primary">{% trans "Назад" %}</button>
+    </a>
+    <div class="card-header text-center">
+        <h3> {% trans "Суворов Роман" %} </h3>
+    </div>
+    <div>
+        <div class="photo">
+            <img src="/static/img/face.png" alt="Фото">
+        </div>
+        <div class="content-left">
+            {% trans "Приветствую! Я студент РГПУ имени Герцена обучаюсь на направлении Информатика вычислительная техника Технологии разработки програмного обеспечения на данном сайте собраны мои работы по направлениям: програмирование, базы данных, компьютерный практикум" %}<br>
+        </div>
+    </div>
+        
+                
+{% endblock %}

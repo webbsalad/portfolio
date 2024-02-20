@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+{% block content %}
+    <a href="/">
+        <button class="btn btn-primary">{% trans "Назад" %}</button>
+    </a>
+    <div class="card-header text-center">
+        <h3> {% trans "КП " %}</h3>
+    </div>
+
+        <div class="works-container">
+            <a href="https://github.com/webbsalad/suvorov" class="works-item">
+                <h5>{% trans "ЛР"%}1</h5>
+            </a>
+
+            <a href="https://github.com/webbsalad/suvorov" class="works-item">
+                <h5>{% trans "ЛР" %}2</h5>
+            </a>
+        </div>
+
+    </div>
+{% endblock %}

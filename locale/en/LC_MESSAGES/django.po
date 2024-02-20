@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-02-20 12:20+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\portf\templates\cw.html:6 .\portf\templates\db.html:6
+#: .\portf\templates\explanation.html:6 .\portf\templates\prog.html:6
+msgid "Назад"
+msgstr "Back"
+
+#: .\portf\templates\cw.html:9
+msgid "КП "
+msgstr "CW"
+
+#: .\portf\templates\cw.html:14 .\portf\templates\cw.html:18
+#: .\portf\templates\db.html:14 .\portf\templates\prog.html:14
+#: .\portf\templates\prog.html:18 .\portf\templates\prog.html:23
+#: .\portf\templates\prog.html:27
+msgid "ЛР"
+msgstr "LW"
+
+#: .\portf\templates\db.html:9 .\portf\templates\index.html:21
+msgid "БД"
+msgstr "DB"
+
+#: .\portf\templates\explanation.html:9 .\portf\templates\index.html:7
+msgid "Суворов Роман"
+msgstr "Suvorov Roman"
+
+#: .\portf\templates\explanation.html:12
+msgid ""
+"Приветствую! Я студент РГПУ имени Герцена обучаюсь на направлении "
+"Информатика вычислительная техника Технологии разработки програмного "
+"обеспечения на данном сайте собраны мои работы по направлениям: "
+"програмирование, базы данных, компьютерный практикум"
+msgstr "Greetings! I am a student of the Herzen State Pedagogical University studying in the field of Informatics, Computer Science, Software Development Technologies, this site contains my work in the following areas: programming, databases, computer workshop"
+
+#: .\portf\templates\index.html:8
+msgid "Студент РГПУ им. Герцена, ИИТТО, ИВТ 2 курс"
+msgstr ""
+"Student of the Russian State Pedagogical University named after. Herzen, "
+"IITTO, IVT 2nd year"
+
+#: .\portf\templates\index.html:9
+msgid ""
+"Данное портфолио создано студентом РГПУ имени Герцена с целью размещения на "
+"нем информации о выполненных работах"
+msgstr ""
+"This portfolio was created by a student of the Herzen State Pedagogical "
+"University for the purpose of placement on information about completed work"
+
+#: .\portf\templates\index.html:11
+msgid "Ссылки:"
+msgstr "Links"
+
+#: .\portf\templates\index.html:13
+msgid "Обо мне"
+msgstr "About"
+
+#: .\portf\templates\index.html:17 .\portf\templates\prog.html:9
+msgid "ПРОГ4"
+msgstr "PROG4"
+
+#: .\portf\templates\index.html:25
+msgid "КП"
+msgstr "CW"
+
+
+
