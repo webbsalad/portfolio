@@ -23,12 +23,13 @@ const modalActions = $("modal-actions");
 
 const SECTIONS = {
   about: "about", обо: "about", me: "about", "о-себе": "about",
-  "3-course": "3-course", works: "3-course", work: "3-course",
-  university: "3-course", уни: "3-course", вуз: "3-course", учеба: "3-course",
+  "university-work": "university-work", "3-course": "university-work",
+  works: "university-work", work: "university-work",
+  university: "university-work", уни: "university-work", вуз: "university-work", учеба: "university-work",
   projects: "projects", проекты: "projects", proj: "projects",
 };
 const SECTION_LABEL = {
-  about: "обо мне", "3-course": "вузовские работы", projects: "проекты",
+  about: "обо мне", "university-work": "вузовские работы", "3-course": "вузовские работы", projects: "проекты",
 };
 
 /* ---------- block-letter banner ---------- */
@@ -362,7 +363,7 @@ async function showAbout() {
     const hint = document.createElement("div");
     hint.className = "faint";
     hint.style.marginTop = "8px";
-    hint.innerHTML = `${cmdLink("about")} — полная страница · ${cmdLink("open 3-course")} · ${cmdLink("open projects")} · ${cmdLink("help")}`;
+    hint.innerHTML = `${cmdLink("about")} — полная страница · ${cmdLink("open university-work")} · ${cmdLink("open projects")} · ${cmdLink("help")}`;
     bio.appendChild(hint);
   } catch { bio.textContent = "[нет данных]"; }
 }
@@ -423,7 +424,106 @@ async function showAboutFull() {
   }
   if (!txts.length) printLine(`<span class="dim">в разделе about нет .txt файлов</span>`);
   printLine("");
-  printLine(`<span class="faint">новые .txt в dock/about (порядок — по числовому префиксу: <b>1.about.txt</b>, <b>2.contacts.txt</b>) · ${cmdLink("home")} — на главную · ${cmdLink("open 3-course")} · ${cmdLink("open projects")}</span>`);
+  printLine(`<span class="faint">новые .txt в dock/about (порядок — по числовому префиксу: <b>1.about.txt</b>, <b>2.contacts.txt</b>) · ${cmdLink("home")} — на главную · ${cmdLink("open university-work")} · ${cmdLink("open projects")}</span>`);
+}
+
+// turn bare URLs / github paths inside text into clickable links (input is raw,
+// output is escaped HTML)
+function linkify(text) {
+  return esc(text).replace(
+    /\b((?:https?:\/\/)?[a-z0-9.-]+\.[a-z]{2,}(?:\/[^\s<>"']*)?)/gi,
+    (m) => {
+      const hasScheme = /^https?:\/\//i.test(m);
+      if (!hasScheme && !m.includes("/")) return m; // e.g. "main.pdf" — not a link
+      const href = hasScheme ? m : "https://" + m;
+      return `<a href="${href}" target="_blank" rel="noopener">${m}</a>`;
+    }
+  );
+}
+
+// full projects page: every .txt in projects/ as a titled block (like about),
+// then any attachments (pdf/images) as their own openable blocks below.
+async function showProjectsFull() {
+  out.innerHTML = "";
+  printLine(`<span class="bright proj-title">// PROJECTS</span>`);
+  printLine("");
+
+  let entries = [];
+  try {
+    const tree = await api(`/api/tree?section=projects&path=`);
+    entries = tree.entries || [];
+  } catch (err) {
+    printLine(`<span class="err">не удалось загрузить projects: ${esc(err.message)}</span>`);
+    return;
+  }
+  const txts = entries.filter((e) => !e.dir && e.kind === "text");
+  const files = entries.filter((e) => !e.dir && e.kind !== "text");
+  const byOrder = (a, b) => (fileOrder(a.name) - fileOrder(b.name)) || a.name.localeCompare(b.name, "ru");
+  txts.sort(byOrder);
+  files.sort(byOrder);
+
+  let i = 1;
+  const head = (name) => {
+    const num = String(i).padStart(2, "0");
+    return `<div class="ab-head"><span class="ab-num">[${num}]</span> ${esc(cleanTitle(name))}` +
+           `<span class="ab-file">${esc(name)}</span></div>`;
+  };
+
+  for (const f of txts) {
+    const block = document.createElement("div");
+    block.className = "ab-block";
+    block.innerHTML = head(f.name);
+    const body = document.createElement("div");
+    body.className = "ab-body text";
+    body.textContent = "…";
+    block.appendChild(body);
+    printNode(block);
+    try {
+      const data = await api(`/api/file?section=projects&path=${encodeURIComponent(f.name)}`);
+      body.innerHTML = linkify((data.content || "").trim()) || "(пусто)";
+    } catch (err) { body.textContent = "ошибка: " + err.message; }
+    i++;
+  }
+
+  for (const f of files) {
+    const url = `/api/original?section=projects&path=${encodeURIComponent(f.name)}`;
+    const block = document.createElement("div");
+    block.className = "ab-block";
+    block.innerHTML = head(f.name);
+    const body = document.createElement("div");
+    body.className = "ab-body";
+    if (f.kind === "pdf") {
+      const frame = document.createElement("iframe");
+      frame.src = url;
+      frame.className = "pdf-frame";
+      frame.loading = "lazy";
+      body.appendChild(frame);
+    } else if (f.kind === "image") {
+      const btn = document.createElement("span");
+      btn.className = "cmd-link";
+      btn.textContent = "[ ascii-просмотр ]";
+      btn.addEventListener("click", () => openImage("projects", f.name, f.name));
+      body.appendChild(btn);
+    } else {
+      const d = document.createElement("div");
+      d.className = "dim";
+      d.textContent = "предпросмотр этого типа файла недоступен";
+      body.appendChild(d);
+    }
+    const links = document.createElement("div");
+    links.className = "faint proj-links";
+    links.innerHTML =
+      `<a href="${url}" target="_blank" rel="noopener">[ открыть оригинал ]</a> · ` +
+      `<a href="${url}&download=1">[ скачать ]</a>`;
+    body.appendChild(links);
+    block.appendChild(body);
+    printNode(block);
+    i++;
+  }
+
+  if (!txts.length && !files.length) printLine(`<span class="dim">в разделе projects пока пусто</span>`);
+  printLine("");
+  printLine(`<span class="faint">файлы в dock/projects (порядок — по числовому префиксу) · ${cmdLink("home")} — на главную · ${cmdLink("about")} · ${cmdLink("open university-work")}</span>`);
 }
 
 /* ============================================================
@@ -435,7 +535,7 @@ const HELP = [
   ["help", "показать это сообщение"],
   ["about", "полная страница обо мне (все .txt блоками)"],
   ["home", "вернуться на главную"],
-  ["open <раздел>", "открыть раздел: about · 3-course · projects"],
+  ["open <раздел>", "открыть раздел: about · university-work · projects"],
   ["ls [раздел]", "список файлов"],
   ["cd <раздел|..>", "перейти / на уровень вверх"],
   ["cat <файл>", "показать текстовый файл"],
@@ -476,7 +576,7 @@ async function cmdLs(arg) {
     return;
   }
   printLine("разделы:", "dim");
-  for (const k of ["about", "3-course", "projects"])
+  for (const k of ["about", "university-work", "projects"])
     printLine(`▸ <b>${k}</b> <span class="dim">— ${SECTION_LABEL[k]}</span>`, "");
 }
 
@@ -495,20 +595,23 @@ function runCommand(raw) {
     case "about": case "whoami": ensureTerminal(); showAboutFull(); break;
     case "home": case "главная": ensureTerminal(); landing(); break;
     case "ls": case "dir": cmdLs(arg).catch((e) => { ensureTerminal(); printLine(esc(e.message), "err"); }); break;
+    case "projects": case "проекты": ensureTerminal(); showProjectsFull(); break;
     case "open": case "o": {
       const sec = resolveSection(arg);
+      if (sec === "projects") { ensureTerminal(); showProjectsFull(); break; }
       if (sec) { openPanel(sec); break; }
       if (state.panelOpen && arg) {
         const e = state.entries.find((x) => x.name.toLowerCase() === arg.toLowerCase());
         if (e) { state.sel = state.entries.indexOf(e); openSelected(); }
         else printLine(`open: «${esc(arg)}» не найдено`, "err");
-      } else printLine("open: укажите раздел (about · 3-course · projects) или файл", "err");
+      } else printLine("open: укажите раздел (about · university-work · projects) или файл", "err");
       break;
     }
     case "cd": {
       if (arg === ".." ) { if (state.panelOpen) panelUp(); break; }
       const sec = resolveSection(arg);
-      if (sec) openPanel(sec);
+      if (sec === "projects") { ensureTerminal(); showProjectsFull(); }
+      else if (sec) openPanel(sec);
       else if (arg === "~" || arg === "/") closePanel();
       else if (state.panelOpen) {
         const e = state.entries.find((x) => x.dir && !x.up && x.name.toLowerCase() === arg.toLowerCase());
@@ -529,7 +632,7 @@ function runCommand(raw) {
     case "clear": case "cls": ensureTerminal(); out.innerHTML = ""; break;
     case "sync":
       ensureTerminal();
-      printLine(`раздел <b>3-course</b> синхронизируется с github.com/webbsalad/3-course каждые 5 минут.`, "dim");
+      printLine(`раздел <b>university-work</b> синхронизируется с github.com/webbsalad/3-course каждые 5 минут.`, "dim");
       break;
     case "exit": case "q": if (state.panelOpen) closePanel(); break;
     default:
@@ -992,7 +1095,7 @@ async function landing() {
   printLine(banner("ROMAN"), "banner");
   printLine(banner("SUVOROV"), "banner");
   printLine(`<span class="dim">go developer · РГПУ им. Герцена · ascii-portfolio v1.0</span>`);
-  printLine(`<span class="faint">наберите ${cmdLink("help")} или нажмите: ${cmdLink("about")} · ${cmdLink("open 3-course")} · ${cmdLink("open projects")}</span>`);
+  printLine(`<span class="faint">наберите ${cmdLink("help")} или нажмите: ${cmdLink("about")} · ${cmdLink("open university-work")} · ${cmdLink("open projects")}</span>`);
   printLine("");
   await showAbout();
 }

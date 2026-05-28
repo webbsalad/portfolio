@@ -1,0 +1,15 @@
+Storya — рекомендации книг и фильмов
+
+Микросервисный бэкенд на Go. Рекомендует книги и фильмы на основе
+твоих оценок других книг и фильмов: чем больше всего оцениваешь,
+тем точнее становится подборка.
+
+Под капотом — несколько независимых сервисов, общающихся через
+gRPC, с единым шлюзом, авторизацией и одноразовыми кодами входа.
+
+Сервисы:
+  gateway   github.com/webbsalad/storya-gateway-backend
+  content   github.com/webbsalad/storya-content-backend
+  recs      github.com/webbsalad/storya-recs-backend
+  otp       github.com/webbsalad/storya-otp-backend
+  passport  github.com/webbsalad/storya-passport-backend

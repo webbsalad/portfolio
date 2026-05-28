@@ -147,6 +147,16 @@ a { color: inherit; }
 .ab-num { color: var(--dim); font-weight: 700; }
 .ab-file { margin-left: auto; color: var(--faint); font-weight: 400; letter-spacing: 0; font-size: 12px; }
 .ab-body { padding: 8px 12px; white-space: pre-wrap; word-break: break-word; }
+.ab-body a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.ab-body a:hover { color: var(--accent); }
+
+/* projects — titled blocks (reuse .ab-block) + attachments */
+.proj-title { letter-spacing: 3px; }
+.ab-body .pdf-frame {
+  display: block; width: 100%; height: 70vh;
+  border: 1px solid var(--line); background: #fff;
+}
+.ab-body .proj-links { margin-top: 8px; letter-spacing: 0; white-space: normal; }
 
 /* help table */
 .help-grid { display: grid; grid-template-columns: max-content 1fr; gap: 2px 18px; margin: 4px 0; }

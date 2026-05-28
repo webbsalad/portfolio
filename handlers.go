@@ -15,7 +15,10 @@ type Server struct {
 }
 
 var sections = map[string]bool{
-	"about":    true,
+	"about":           true,
+	"university-work": true,
+	// `3-course` stays valid because the synced checkout is briefly renamed to it
+	// during a pull (see gitsync.go).
 	"3-course": true,
 	"projects": true,
 }

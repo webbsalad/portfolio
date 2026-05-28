@@ -16,7 +16,6 @@ var webFS embed.FS
 func main() {
 	addr := flag.String("addr", ":8080", "HTTP listen address")
 	dock := flag.String("dock", "./dock", "path to the dock data directory")
-	repo := flag.String("repo", "3-course", "subfolder under dock kept in sync with git")
 	interval := flag.Duration("sync", 5*time.Minute, "git sync interval")
 	flag.Parse()
 
@@ -27,8 +26,9 @@ func main() {
 
 	srv := &Server{dock: dockAbs}
 
-	// Keep the university-works folder in sync with GitHub.
-	go startGitSync(filepath.Join(dockAbs, *repo), *interval)
+	// Keep the university-works folder in sync with GitHub (see gitsync.go: the
+	// 3-course repo is checked out and shown as university-work).
+	go startGitSync(dockAbs, *interval)
 
 	staticFS, err := fs.Sub(webFS, "web")
 	if err != nil {
