@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>roman suvorov // ascii-port</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="fx"></canvas>
+  <div id="crt" aria-hidden="true"></div>
+  <div id="cursor" aria-hidden="true"></div>
+
+  <main id="screen">
+    <header id="topbar">
+      <span class="tb-left">● ascii-port</span>
+      <span class="tb-mid" id="breadcrumb"></span>
+      <span class="tb-right">
+        <button id="theme-btn" title="тема (t)">[ ◐ тема ]</button>
+        <span id="clock">--:--:--</span>
+      </span>
+    </header>
+
+    <section id="viewport">
+      <div id="output"></div>
+      <div id="panel" hidden></div>
+    </section>
+
+    <div id="promptwrap">
+      <div id="promptline">
+        <span id="ps1">roman@portfolio:<span id="cwd">~</span>$&nbsp;</span><span id="typed"></span><span id="caret">█</span>
+      </div>
+    </div>
+
+    <footer id="hints">
+      <span>↑↓ выбор</span><span>→ / ⏎ открыть</span><span>← / ⌫ назад</span><span>помощь: <b>help</b></span><span>тема: <b>t</b></span>
+    </footer>
+  </main>
+
+  <div id="modal" hidden>
+    <div id="modal-box">
+      <div id="modal-title"><span id="modal-name"></span><button id="modal-close" title="закрыть (Esc)">[ x ]</button></div>
+      <div id="modal-body"></div>
+      <div id="modal-actions"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
