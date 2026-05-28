@@ -555,6 +555,7 @@ function setTheme(t) {
   document.documentElement.setAttribute("data-theme", next);
   try { localStorage.setItem("ap-theme", next); } catch {}
   refreshFxColor();
+  renderCritter();
 }
 function initTheme() {
   let t = "dark";
@@ -578,6 +579,213 @@ const DENS = [".", ":", "*", "#", "@"];
 let trail = [];
 const LIFE = 430;
 const RADIUS = 80;
+let trailFont = "13px JetBrains Mono, monospace";
+
+// ---- starry-sky background + shooting stars (drawn behind the text) ----
+let stars = [];
+let shooting = [];
+let nextShoot = 0;
+let starFont = "11px JetBrains Mono, monospace";
+let starFontBig = "16px JetBrains Mono, monospace";
+const STAR_CHARS = [".", ".", ".", "·", "·", "*", "+", "°"];
+const STAR_BIG_CHARS = ["*", "+", "✦", "✶"];
+
+function initStars() {
+  const count = Math.round((window.innerWidth * window.innerHeight) / 5200); // denser sky
+  stars = [];
+  for (let i = 0; i < count; i++) {
+    const big = Math.random() < 0.12; // a few larger, brighter stars
+    stars.push({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      big,
+      ch: big ? STAR_BIG_CHARS[Math.floor(Math.random() * STAR_BIG_CHARS.length)]
+              : STAR_CHARS[Math.floor(Math.random() * STAR_CHARS.length)],
+      base: (big ? 0.22 : 0.08) + Math.random() * (big ? 0.32 : 0.28),
+      tw: Math.random() * Math.PI * 2,
+      tws: 0.4 + Math.random() * 1.6,
+    });
+  }
+}
+
+// ---- celestial bodies + clouds (procedural ASCII art, theme-dependent) ----
+let clouds = [];
+let lastTS = 0;
+// small fonts + large char-radius = compact but very dense/voluminous bodies
+let bodyFont = "9px JetBrains Mono, monospace";   // moon / sun
+let planetFont = "8px JetBrains Mono, monospace"; // planets
+let cloudFont = "14px JetBrains Mono, monospace";
+
+// shading ramp: dark (sparse) -> bright (dense)
+const RAMP = " .·:-=+*oa%#@@";
+function shadeChar(d) { // d = nx^2+ny^2 in [0,1]; nearer center => denser
+  const t = Math.max(0, Math.min(1, 1 - d));
+  return RAMP[Math.min(RAMP.length - 1, Math.floor(0.35 * RAMP.length + t * 0.65 * RAMP.length))];
+}
+function lumChar(l) { // l ~ 0..1.25 lighting value -> ramp char
+  const t = Math.max(0, Math.min(1, l / 1.25));
+  return RAMP[Math.max(2, Math.min(RAMP.length - 1, Math.round(2 + t * (RAMP.length - 3))))];
+}
+function makeGrid(W, H) {
+  const g = [];
+  for (let r = 0; r < 2 * H + 1; r++) g.push(new Array(2 * W + 1).fill(" "));
+  return g;
+}
+const gridLines = (g) => g.map((r) => r.join(""));
+
+// chars are ~2x taller than wide, so horizontal radius = 2 * vertical radius
+function genMoon(Rv) { // sphere lit from the side so it reads as a slightly turned 3D globe
+  const Rh = 2 * Rv, g = makeGrid(Rh, Rv);
+  const lx = -0.62, ly = -0.42; // raking light from upper-left -> a turned sphere, not a flat disc
+  for (let ry = -Rv; ry <= Rv; ry++) for (let rx = -Rh; rx <= Rh; rx++) {
+    const nx = rx / Rh, ny = ry / Rv, d = nx * nx + ny * ny;
+    if (d > 1) continue;
+    const nz = Math.sqrt(Math.max(0, 1 - d));
+    let lum = nx * lx + ny * ly + nz * 0.78;
+    lum = Math.max(0.1, lum) * (0.4 + 0.6 * nz); // stronger limb darkening -> rounder, less flat
+    g[Rv + ry][Rh + rx] = lumChar(lum);
+  }
+  const craters = [[-0.35, -0.18, 2], [0.32, 0.12, 2], [0.02, 0.42, 1], [-0.18, 0.44, 1], [0.45, -0.3, 1]];
+  for (const [cx, cy, rad] of craters) {
+    const ccx = Math.round(cx * Rh), ccy = Math.round(cy * Rv);
+    for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad * 2; dx <= rad * 2; dx++) {
+      const gx = Rh + ccx + dx, gy = Rv + ccy + dy;
+      if (gy < 0 || gy >= g.length || gx < 0 || gx >= g[0].length || g[gy][gx] === " ") continue;
+      const dd = (dx / (rad * 2)) ** 2 + (dy / rad) ** 2;
+      if (dd <= 1) g[gy][gx] = dd > 0.5 ? "o" : ".";
+    }
+  }
+  return gridLines(g);
+}
+function genSun(Rv) { // dense disc + 8 rays
+  const pad = 3, Rh = 2 * Rv, W = Rh + 2 * pad, H = Rv + pad, g = makeGrid(W, H);
+  for (let ry = -Rv; ry <= Rv; ry++) for (let rx = -Rh; rx <= Rh; rx++) {
+    const nx = rx / Rh, ny = ry / Rv, d = nx * nx + ny * ny;
+    if (d <= 1) g[H + ry][W + rx] = shadeChar(d);
+  }
+  const dirs = [[0, -1], [0, 1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  for (const [dx, dy] of dirs) for (let s = 1; s <= pad; s++) {
+    const rx = Math.round(dx * (Rh + s * 2)), ry = Math.round(dy * (Rv + s));
+    const gy = H + ry, gx = W + rx;
+    if (gy >= 0 && gy < g.length && gx >= 0 && gx < g[0].length)
+      g[gy][gx] = (dx && dy) ? (dx * dy > 0 ? "\\" : "/") : (dx ? "-" : "|");
+  }
+  return gridLines(g);
+}
+function genPlanet(Rv, banded) { // lit voluminous sphere, optional bands
+  const Rh = 2 * Rv, g = makeGrid(Rh, Rv);
+  const lx = -0.4, ly = -0.45;
+  for (let ry = -Rv; ry <= Rv; ry++) for (let rx = -Rh; rx <= Rh; rx++) {
+    const nx = rx / Rh, ny = ry / Rv, d = nx * nx + ny * ny;
+    if (d > 1) continue;
+    const nz = Math.sqrt(Math.max(0, 1 - d));
+    let lum = Math.max(0.14, nx * lx + ny * ly + nz * 0.92) * (0.5 + 0.5 * nz);
+    let ch = lumChar(lum);
+    if (banded) { const b = Math.sin(ny * 5 + 0.6); if (b > 0.55) ch = "="; else if (b < -0.55) ch = "~"; }
+    g[Rv + ry][Rh + rx] = ch;
+  }
+  return gridLines(g);
+}
+
+function genSaturn(Rv) { // lit sphere + a TILTED ring passing behind (top) and in front (bottom)
+  const Rh = 2 * Rv, A = Rh * 1.9, B = Math.max(1.3, Rv * 0.55);
+  const t = 0.34, ct = Math.cos(t), st = Math.sin(t);          // ring tilt -> 3D, not flat
+  const W = Math.ceil(A) + 1, H = Rv + 3, g = makeGrid(W, H);  // taller grid for the tilted ring
+  const lx = -0.4, ly = -0.45;
+  const onRing = (rx, ry) => {                                 // test against the rotated ellipse
+    const u = rx * ct + ry * st, v = -rx * st + ry * ct;
+    return Math.abs((u / A) ** 2 + (v / B) ** 2 - 1) < 0.5;
+  };
+  for (let ry = -H; ry <= H; ry++) for (let rx = -W; rx <= W; rx++) {
+    const sd = (rx / Rh) ** 2 + (ry / Rv) ** 2, inSphere = sd <= 1;
+    let ch = " ";
+    if (onRing(rx, ry) && ry < 0 && !inSphere) ch = "=";       // ring behind the planet (upper half)
+    if (inSphere) {
+      const nx = rx / Rh, ny = ry / Rv, nz = Math.sqrt(Math.max(0, 1 - sd));
+      ch = lumChar(Math.max(0.14, nx * lx + ny * ly + nz * 0.92) * (0.5 + 0.5 * nz));
+    }
+    if (onRing(rx, ry) && ry >= 0) ch = "=";                   // ring in front of the planet (lower half)
+    g[H + ry][W + rx] = ch;
+  }
+  return gridLines(g);
+}
+
+const MOON = genMoon(8);          // compact but many chars
+const SUN = genSun(6);
+const PLANET_A = genPlanet(3, true); // tiny gas giant
+const SATURN = genSaturn(3);
+
+// several cloud shapes — the original outline one plus newer fuller ones
+const CLOUDS = [
+  [
+    "    .--.    ",
+    " .-(    ).  ",
+    "(___.__)__) ",
+  ],
+  [
+    "       .--~~~~--.       ",
+    "    .-(    ::    )-.    ",
+    "   (   ::::::::::   )   ",
+    "  (  ::::::::::::::  )  ",
+    "   `~--..______..--~'   ",
+  ],
+  [
+    "        .-~~~-.            ",
+    "   .--~~       ~~--.       ",
+    " (        ::::        )___ ",
+    "(   ::::::::::::::::::::   )",
+    " `~--...._________....--~' ",
+  ],
+  [
+    "      __      ",
+    "   .-~  ~-.   ",
+    "  (  ::::  )  ",
+    "   `-.__.-'   ",
+  ],
+];
+
+function initClouds() {
+  clouds = [];
+  for (let i = 0; i < 5; i++) {
+    clouds.push({
+      art: CLOUDS[Math.floor(Math.random() * CLOUDS.length)],
+      x: Math.random() * window.innerWidth,
+      y: 24 + Math.random() * window.innerHeight * 0.55,
+      vx: 6 + Math.random() * 16,
+      alpha: 0.16 + Math.random() * 0.12,
+    });
+  }
+}
+
+// draw an ASCII-art block char-by-char (no occlusion — it's a muted backdrop)
+function blitArt(lines, ox, oy, alpha, font) {
+  ctx.font = font;
+  const cw = ctx.measureText("M").width, lh = parseInt(font, 10) + 2;
+  ctx.fillStyle = `rgba(${fgRGB},${alpha})`;
+  for (let r = 0; r < lines.length; r++) {
+    const row = lines[r], py = oy + r * lh;
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === " ") continue;
+      ctx.fillText(row[c], ox + c * cw, py);
+    }
+  }
+}
+function artW(lines, font) { ctx.font = font; return lines.reduce((m, l) => Math.max(m, l.length), 0) * ctx.measureText("M").width; }
+
+function drawMoon() { blitArt(MOON, window.innerWidth - artW(MOON, bodyFont) - 46, 36, 0.62, bodyFont); }
+function drawSun() { blitArt(SUN, window.innerWidth - artW(SUN, bodyFont) - 42, 30, 0.64, bodyFont); }
+function drawPlanets() {
+  blitArt(PLANET_A, window.innerWidth * 0.12, window.innerHeight * 0.64, 0.44, planetFont);
+  blitArt(SATURN, window.innerWidth * 0.74, window.innerHeight * 0.38, 0.52, planetFont);
+}
+function drawClouds(now) {
+  const dt = lastTS ? Math.min(0.05, (now - lastTS) / 1000) : 0;
+  for (const c of clouds) {
+    c.x += c.vx * dt;
+    if (c.x > window.innerWidth + 40) { c.x = -artW(c.art, cloudFont); c.y = 24 + Math.random() * window.innerHeight * 0.55; }
+    blitArt(c.art, c.x, c.y, c.alpha, cloudFont);
+  }
+}
 
 function resizeFx() {
   const dpr = window.devicePixelRatio || 1;
@@ -585,8 +793,15 @@ function resizeFx() {
   fx.height = Math.floor(window.innerHeight * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   CELL = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--cell")) || 14;
-  ctx.font = `${CELL - 1}px ${"JetBrains Mono, monospace"}`;
   ctx.textBaseline = "top";
+  trailFont = `${CELL - 1}px JetBrains Mono, monospace`;
+  starFont = `${Math.max(9, CELL - 3)}px JetBrains Mono, monospace`;
+  starFontBig = `${CELL + 4}px JetBrains Mono, monospace`;
+  bodyFont = `${Math.max(8, CELL - 5)}px JetBrains Mono, monospace`;
+  planetFont = `${Math.max(7, CELL - 6)}px JetBrains Mono, monospace`;
+  cloudFont = `${CELL}px JetBrains Mono, monospace`;
+  initStars();
+  initClouds();
 }
 function refreshFxColor() {
   const hex = getComputedStyle(document.documentElement).getPropertyValue("--fg").trim();
@@ -603,9 +818,54 @@ function onMove(x, y) {
   if (trail.length > 40) trail.shift();
 }
 
-function drawFx() {
-  ctx.clearRect(0, 0, fx.width, fx.height);
-  const now = performance.now();
+function drawStars(now) {
+  const t = now / 1000;
+  for (let pass = 0; pass < 2; pass++) {     // pass 0: small, pass 1: big (one font switch each)
+    ctx.font = pass ? starFontBig : starFont;
+    for (const s of stars) {
+      if (!!s.big !== !!pass) continue;
+      const a = s.base * (0.5 + 0.5 * Math.sin(s.tw + t * s.tws));
+      if (a <= 0.02) continue;
+      ctx.fillStyle = `rgba(${fgRGB},${a.toFixed(3)})`;
+      ctx.fillText(s.ch, s.x, s.y);
+    }
+  }
+}
+
+function drawShooting(now) {
+  if (now >= nextShoot) {
+    nextShoot = now + 3500 + Math.random() * 6500;
+    const fromLeft = Math.random() < 0.5;
+    const startX = fromLeft ? Math.random() * window.innerWidth * 0.35 : window.innerWidth * (0.65 + Math.random() * 0.35);
+    const startY = Math.random() * window.innerHeight * 0.45;
+    const dir = fromLeft ? 1 : -1;
+    const speed = 620 + Math.random() * 340;
+    const ang = Math.PI * (0.12 + Math.random() * 0.08); // shallow downward angle
+    shooting.push({ x: startX, y: startY, vx: dir * speed * Math.cos(ang), vy: speed * Math.sin(ang) + 240, t0: now, life: 850 + Math.random() * 520 });
+  }
+  ctx.font = starFont;
+  const TAIL = 9;
+  for (let i = shooting.length - 1; i >= 0; i--) {
+    const s = shooting[i];
+    if (now - s.t0 > s.life) { shooting.splice(i, 1); continue; }
+    const dt = (now - s.t0) / 1000;
+    const hx = s.x + s.vx * dt, hy = s.y + s.vy * dt;
+    if (hx < -60 || hx > window.innerWidth + 60 || hy > window.innerHeight + 60) { shooting.splice(i, 1); continue; }
+    const head = Math.max(0, 1 - (now - s.t0) / s.life);
+    const mag = Math.hypot(s.vx, s.vy), ux = s.vx / mag, uy = s.vy / mag;
+    for (let k = 0; k < TAIL; k++) {
+      const px = hx - ux * k * CELL * 0.85, py = hy - uy * k * CELL * 0.85;
+      const a = head * (1 - k / TAIL);
+      if (a <= 0.04) continue;
+      const ch = k === 0 ? "*" : (k < 3 ? "+" : (k < 6 ? "·" : "."));
+      ctx.fillStyle = `rgba(${fgRGB},${a.toFixed(3)})`;
+      ctx.fillText(ch, px, py);
+    }
+  }
+}
+
+function drawTrail(now) {
+  ctx.font = trailFont;
   trail = trail.filter((p) => now - p.t < LIFE);
   for (const p of trail) {
     const recency = 1 - (now - p.t) / LIFE;
@@ -627,7 +887,48 @@ function drawFx() {
       }
     }
   }
+}
+
+function drawFx() {
+  ctx.clearRect(0, 0, fx.width, fx.height);
+  const now = performance.now();
+  const day = document.documentElement.getAttribute("data-theme") === "light";
+  if (day) {
+    drawClouds(now);
+    drawSun();
+  } else {
+    drawStars(now);
+    drawShooting(now);
+    drawMoon();
+    drawPlanets();
+  }
+  drawTrail(now);
+  lastTS = now;
   requestAnimationFrame(drawFx);
+}
+
+// tiny critter standing on the terminal edge: a little cow by day, a UFO by night.
+const COW =
+  "   ^__^\n" +
+  "   (oo)\\_____\n" +
+  "   (__)\\     )~\n" +
+  "       ||----w   ~\n" +
+  "       ||    ||";
+const UFO =
+  "    .-~~~-.\n" +
+  "  .-(  o  )-.\n" +
+  " (___________)\n" +
+  "   /  /|\\  \\\n" +
+  "  '  ' | '  '";
+let critterArt = null;
+function renderCritter() {
+  if (!critterArt) return;
+  const day = document.documentElement.getAttribute("data-theme") === "light";
+  critterArt.textContent = day ? COW : UFO;
+}
+function startCritter() {
+  critterArt = document.getElementById("critter-art");
+  renderCritter();
 }
 
 /* ============================================================
@@ -734,6 +1035,7 @@ function init() {
   });
   window.addEventListener("resize", resizeFx);
 
+  startCritter();
   boot();
 }
 

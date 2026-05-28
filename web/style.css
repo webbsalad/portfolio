@@ -177,6 +177,13 @@ a { color: inherit; }
 
 /* ---- prompt ---- */
 #promptwrap { position: relative; border-top: 1px solid var(--line); margin-top: 8px; padding-top: 6px; }
+/* tiny critter perched on the terminal edge (cow by day, UFO by night) */
+#critter {
+  position: absolute; right: 30px; bottom: calc(100% - 10px);
+  font-size: 7px; line-height: 1.05;
+  color: var(--dim); text-shadow: var(--glow); pointer-events: none;
+}
+#critter pre { margin: 0; white-space: pre; }
 #promptline { white-space: pre-wrap; word-break: break-word; text-shadow: var(--glow); }
 #ps1 { color: var(--dim); }
 #cwd { color: var(--fg); }
@@ -221,6 +228,15 @@ a { color: inherit; }
 #modal-body .text { white-space: pre-wrap; word-break: break-word; }
 .ascii-art { white-space: pre; line-height: 1.0; letter-spacing: 0; font-size: 8px; }
 .ascii-art.mono { color: var(--fg); }
+
+/* colored ascii is calibrated for a dark backdrop — in light mode give it a
+   dark semi-transparent frame + a bit more contrast so light pixels stay visible */
+[data-theme="light"] .ascii-art:not(.mono) {
+  background: rgba(8, 8, 10, 0.5);
+  padding: 10px;
+  border: 1px solid var(--line);
+  filter: contrast(1.12) saturate(1.15);
+}
 #modal-actions {
   display: flex; gap: 10px; flex-wrap: wrap;
   border-top: 1px solid var(--line); padding: 7px 12px; color: var(--dim);
