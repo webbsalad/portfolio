@@ -578,7 +578,7 @@ let fgRGB = "232,232,230";
 const DENS = [".", ":", "*", "#", "@"];
 let trail = [];
 const LIFE = 430;
-const RADIUS = 80;
+const RADIUS = 48;
 let trailFont = "13px JetBrains Mono, monospace";
 
 // ---- starry-sky background + shooting stars (drawn behind the text) ----
