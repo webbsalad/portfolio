@@ -1125,12 +1125,6 @@ function init() {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
   });
 
-  // ---- bottom quick-navigation buttons (run their command) ----
-  $("hints").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-cmd]");
-    if (b) runCommand(b.dataset.cmd);
-  });
-
   // ---- touch: raise the soft keyboard and route its input into the buffer ----
   const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
   if (isTouch && kbd) {
