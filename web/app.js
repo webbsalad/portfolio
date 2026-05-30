@@ -13,7 +13,9 @@ const caret = $("caret");
 // command line is driven by a JS buffer (not a focused input) so typing always
 // works regardless of focus state.
 let buffer = "";
-function setBuffer(v) { buffer = v; typed.textContent = v; }
+const kbd = $("kbd"); // hidden input that raises the soft keyboard on touch
+const homeLink = $("home-link"); // clickable ● ascii-port logo -> home
+function setBuffer(v) { buffer = v; typed.textContent = v; if (kbd && kbd.value !== v) kbd.value = v; }
 const cwdEl = $("cwd");
 const crumbEl = $("breadcrumb");
 const modal = $("modal");
@@ -1038,6 +1040,10 @@ function startCritter() {
    GLOBAL KEY HANDLING
    ============================================================ */
 function onKey(e) {
+  // on touch, the hidden #kbd input drives typing via its own listeners
+  // (input/keydown); don't let the global handler double-process those events.
+  // the home-link handles its own Enter/Space activation, too.
+  if (e.target === kbd || e.target === homeLink) return;
   // modal first
   if (!modal.hidden) {
     const k = e.key.toLowerCase();
@@ -1111,6 +1117,51 @@ function init() {
   setInterval(tickClock, 1000);
 
   document.addEventListener("keydown", onKey, true);
+
+  // ---- clickable logo -> home (works on click/tap and Enter/Space) ----
+  const goHome = () => { ensureTerminal(); landing(); };
+  homeLink.addEventListener("click", goHome);
+  homeLink.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goHome(); }
+  });
+
+  // ---- bottom quick-navigation buttons (run their command) ----
+  $("hints").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-cmd]");
+    if (b) runCommand(b.dataset.cmd);
+  });
+
+  // ---- touch: raise the soft keyboard and route its input into the buffer ----
+  const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  if (isTouch && kbd) {
+    const submit = () => {
+      if (state.panelOpen && buffer.length === 0) openSelected();
+      else submitCommand();
+    };
+    const focusKbd = () => { try { kbd.value = buffer; kbd.focus({ preventScroll: true }); } catch {} };
+    // tap on empty terminal area focuses the input -> keyboard pops up.
+    // taps on interactive elements keep doing their own thing.
+    $("screen").addEventListener("click", (e) => {
+      if (!modal.hidden) return;
+      // ignore interactive elements and the chrome (topbar / bottom nav)
+      if (e.target.closest("button, a, .btn, .row, .cmd-link, #home-link, #topbar, #hints")) return;
+      focusKbd();
+    });
+    kbd.addEventListener("input", () => {
+      // some soft keyboards deliver Enter as a newline in the value
+      if (kbd.value.includes("\n")) {
+        kbd.value = kbd.value.replace(/\n/g, "");
+        setBuffer(kbd.value);
+        submit();
+        return;
+      }
+      setBuffer(kbd.value);
+    });
+    kbd.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); submit(); }
+    });
+  }
+
   $("theme-btn").addEventListener("click", () => setTheme(null));
   $("modal-close").addEventListener("click", closeModal);
   modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
@@ -1134,7 +1185,7 @@ function init() {
   window.addEventListener("mousemove", (e) => onMove(e.clientX, e.clientY));
   window.addEventListener("mouseout", (e) => { if (!e.relatedTarget) cursorEl.classList.add("hidden"); });
   window.addEventListener("mouseover", (e) => {
-    cursorEl.classList.toggle("link", !!e.target.closest("button, .btn, .row, a, #theme-btn, .cmd-link"));
+    cursorEl.classList.toggle("link", !!e.target.closest("button, .btn, .row, a, #theme-btn, .cmd-link, #home-link"));
   });
   window.addEventListener("resize", resizeFx);
 

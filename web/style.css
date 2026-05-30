@@ -79,6 +79,13 @@ a { color: inherit; }
 }
 #cursor.link { width: 20px; height: 20px; border-radius: 50%; }
 #cursor.hidden { opacity: 0; }
+/* touch devices can't hover, so a tap fires a synthetic mouseover with no
+   matching mouseout — the custom cursor would stay stuck where you tapped.
+   There's no pointer to track on touch anyway, so just hide it. */
+@media (hover: none), (pointer: coarse) {
+  #cursor { display: none !important; }
+  html, body { cursor: auto; }
+}
 
 /* ---- screen layout ---- */
 #screen {
@@ -95,7 +102,9 @@ a { color: inherit; }
   color: var(--dim); font-size: 13px;
   text-shadow: var(--glow);
 }
-.tb-left { color: var(--fg); font-weight: 700; }
+.tb-left { color: var(--fg); font-weight: 700; cursor: none; transition: color .15s, text-shadow .15s; }
+.tb-left:hover { color: var(--accent); text-shadow: var(--glow); }
+.tb-left:active { opacity: .7; }
 .tb-mid  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tb-right { display: flex; align-items: center; gap: 14px; }
 #theme-btn { background: none; border: none; color: var(--dim); font: inherit; cursor: none; }
@@ -195,6 +204,15 @@ a { color: inherit; }
 }
 #critter pre { margin: 0; white-space: pre; }
 #promptline { white-space: pre-wrap; word-break: break-word; text-shadow: var(--glow); }
+/* hidden keyboard-summoning input (touch). kept renderable (not display:none)
+   so focus() can raise the soft keyboard; 16px avoids iOS focus-zoom. */
+#kbd {
+  position: absolute; left: 0; bottom: 0;
+  width: 1px; height: 1px;
+  opacity: 0; border: 0; padding: 0; margin: 0;
+  background: transparent; color: transparent; caret-color: transparent;
+  font-size: 16px;
+}
 #ps1 { color: var(--dim); }
 #cwd { color: var(--fg); }
 #typed { color: var(--fg); }
@@ -207,11 +225,23 @@ a { color: inherit; }
 @keyframes blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } }
 
 #hints {
-  display: flex; gap: 18px; flex-wrap: wrap;
+  display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
   color: var(--faint); font-size: 12px;
   padding: 6px 0 2px; border-top: 1px dashed var(--line); margin-top: 6px;
 }
 #hints b { color: var(--dim); }
+.hint-keys { white-space: normal; }
+
+/* tappable quick-navigation — shown on touch (see media query), hidden on desktop */
+.quicknav { display: none; flex-wrap: wrap; gap: 8px; width: 100%; }
+.quicknav button {
+  background: none; border: 1px solid var(--line); color: var(--fg);
+  font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .5px;
+  padding: 8px 14px; border-radius: 3px; cursor: none;
+  flex: 1 1 auto; min-width: max-content;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.quicknav button:active { background: var(--sel-bg); color: var(--sel-fg); border-color: var(--sel-bg); }
 
 /* ---- modal viewer ---- */
 #modal {
@@ -257,7 +287,47 @@ a { color: inherit; }
 }
 .btn:hover { background: var(--sel-bg); color: var(--sel-fg); }
 
+/* ---- narrow screens (phones) ---- */
 @media (max-width: 640px) {
   html, body { font-size: 13px; }
+  #screen { padding: 8px 11px 6px; }
+
+  #topbar { gap: 8px; font-size: 12px; padding-bottom: 6px; margin-bottom: 8px; }
+  .tb-right { gap: 12px; }
+
+  .banner { font-size: 11px; }
+  .about { gap: 14px; }
   .about .portrait { font-size: 5px; }
+  .about .bio { max-width: 100%; }
+  .about .bio h2 { font-size: 16px; }
+
+  .ab-block { margin: 10px 0; }
+  .ab-head { padding: 6px 10px; }
+  .ab-body { padding: 8px 10px; }
+  .ab-body .pdf-frame { height: 58vh; }
+
+  /* modal goes full-screen with bigger, finger-friendly controls */
+  #modal { padding: 0; }
+  #modal-box {
+    width: 100vw; height: 100%; max-width: 100vw; max-height: 100vh;
+    border: 0; box-shadow: none;
+  }
+  #modal-title { padding: 10px 12px; }
+  #modal-close { padding: 6px 10px; font-size: 18px; }
+  #modal-actions { gap: 8px; padding: 10px 12px; }
+  .btn { padding: 8px 14px; }
+}
+
+/* ---- touch devices (no hovering pointer) ---- */
+@media (hover: none), (pointer: coarse) {
+  #hints { gap: 10px; padding-top: 8px; }
+  .hint-keys { display: none; }
+  .quicknav { display: flex; }
+
+  /* discoverability: invite the user to tap the prompt to type */
+  #typed:empty + #caret { display: none; }
+  #typed:empty::after {
+    content: "› нажмите, чтобы ввести команду";
+    color: var(--faint); font-weight: 400;
+  }
 }

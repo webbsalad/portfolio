@@ -16,7 +16,7 @@
 
   <main id="screen">
     <header id="topbar">
-      <span class="tb-left">● ascii-port</span>
+      <span class="tb-left" id="home-link" title="на главную" role="button" tabindex="0">● ascii-port</span>
       <span class="tb-mid" id="breadcrumb"></span>
       <span class="tb-right">
         <button id="theme-btn" title="тема (t)">[ ◐ тема ]</button>
@@ -34,10 +34,22 @@
       <div id="promptline">
         <span id="ps1">roman@portfolio:<span id="cwd">~</span>$&nbsp;</span><span id="typed"></span><span id="caret">█</span>
       </div>
+      <!-- invisible field that exists only to summon the on-screen keyboard on
+           touch devices; its input is mirrored into the command buffer -->
+      <input id="kbd" type="text" autocomplete="off" autocapitalize="none"
+             autocorrect="off" spellcheck="false" inputmode="text"
+             enterkeyhint="go" aria-hidden="true" tabindex="-1" />
     </div>
 
     <footer id="hints">
-      <span>↑↓ выбор</span><span>→ / ⏎ открыть</span><span>← / ⌫ назад</span><span>помощь: <b>help</b></span><span>тема: <b>t</b></span>
+      <span class="hint-keys">↑↓ выбор · → / ⏎ открыть · ← / ⌫ назад · помощь: <b>help</b> · тема: <b>t</b></span>
+      <nav class="quicknav" aria-label="навигация">
+        <button data-cmd="home">home</button>
+        <button data-cmd="about">обо мне</button>
+        <button data-cmd="open university-work">учёба</button>
+        <button data-cmd="open projects">проекты</button>
+        <button data-cmd="help">help</button>
+      </nav>
     </footer>
   </main>
 
